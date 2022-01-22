@@ -54,10 +54,15 @@ E.g. `div#button1.btn.alert[onclick="press_callback()"]>b>{text}` will produce t
     </div>
 ```
 
-### Node duplication
-Nodes could be duplicated via `*<number>` operator. Also, can be applied to element groups
+### Bindings
+Node attribute values and text content nodes can use bindings to watch changes of specific property.
+For this, special syntax @ident can be used in place of content which we are trying to bind, e.g.:
+`div>{@content}`, `p[class=@pclass]`, `(li>{@collection%text}) * @collection`
 
-E.g. `ul>li*3^ol>(li>b"hello")*2` will produce the following code when rendered to html:
+### Node duplication and collection mapping
+Nodes could be duplicated or be bound to the collection via `*<number|@collection[%sub%path]>` operator.
+
+E.g. `(ul>li*3) + ol>(li>b>{hello})*2` will produce the following code when rendered to html:
 ```html
 <ul>
     <li></li>
@@ -70,68 +75,40 @@ E.g. `ul>li*3^ol>(li>b"hello")*2` will produce the following code when rendered 
 </ol>
 ```
 
-### Numeration
-Identifiers or string values could be dynamically generated when duplicating elements - any occurence of `$` character inside indents will be replaced with generated number when `*` operatir is used for node duplication:
-
-E.g. `ul>li#item-$"Item $ content"*5` will produce the following when rendered to html:
+#### Collections
+Let's say we have collection `items` in out component. each `items` element have `name`
+and `id` properties. then, to create list based on this colection we can use the following syntax:
+`ul>(li[id=@items%id]>div.list_icon+{My name is @items%name}) * @items`
+which with items == `[{name=one id=item1}, {name=two id=item2}, {name=three id=item3}]` will produce:
 ```html
 <ul>
-    <li id="item-1">Item 1 content</li>
-    <li id="item-2">Item 2 content</li>
-    <li id="item-3">Item 3 content</li>
-    <li id="item-4">Item 4 content</li>
-    <li id="item-5">Item 5 content</li>
+    <li id="item1"><div class="list_icon"></div>My name is one</li>
+    <li id="item2"><div class="list_icon"></div>My name is two</li>
+    <li id="item3"><div class="list_icon"></div>My name is three</li>
 </ul>
 ```
 
-Also, variables could be used to make substitutions even more flexible!
-
-E.g. `(ul#list-$[y]>li#item-$[y]-$[x]{Item $[x]}*3x)*2y` will generate the following when rendered to html:
+### Nested components
+Components can be nested with `$component_name` binding expressions:
+Let's say ve have parenc component with code `html>body>$body` and mody component with code `div>p>{hello}`
+Then resulting component will be:
 ```html
-<ul id="list-1">
-    <li id="item-1-1">Item 1</li>
-    <li id="item-1-2">Item 2</li>
-    <li id="item-1-3">Item 3</li>
+<html>
+    <body>
+        <div>
+            <p>hello</p>
+        </div>
+    </body>
+</html>
+```
+
+This also can be used for collections of components.
+e.g.: `ul>$items * @items` where `@items` has 2 components of `li>{hi}` will produce:
+```html
+<ul>
+    <li>hi</li>
+    <li>hi</li>
 </ul>
-<ul id="list-2">
-    <li id="item-2-1">Item 1</li>
-    <li id="item-2-2">Item 2</li>
-    <li id="item-2-3">Item 3</li>
-</ul>
 ```
 
-`$` sibstitution character can be escaped in identifiers via `$$` and via `\$` in strings
-
-Numbering order can be modified via `&<modifier>` operator, where `<modifier>` is one of pre-defined modifiers or custom-registered modifiers
-
-##### Pre-defined modifiers
-- `rev` - reverses numbering sequence
-- `from:*` - counts from value specified by wildcard instead of 1
-- `inc:*` - counts in increments specified by wildcard instead of 1
-
-E.g `li#item-$[x]*5x&from-0&inc-2&rev` will generate the following when rendered to html:
-```html
-<li id="item-8"></li>
-<li id="item-6"></li>
-<li id="item-4"></li>
-<li id="item-2"></li>
-<li id="item-0"></li>
-```
-
-##### Element instantiation callbacks
-
-We can set "hooks" for element instantiation in tree via `@<key>` operator. uTree engine will call `on_rendered(key: String, element: TreeElement<T>)` when the tree element gets instantiated. `<key>` here could be any identifier, and even could contain variables when used with node duplication: `li@item-$*3&rev`:
-
-```html
-<li></li>
-<li></li>
-<li></li>
-```
-```
-Callback calls:
-- on_rendered for "item-1"
-- on_rendered for "item-2"
-- on_rendered for "item-3"
-```
-
-This could be useful when building DOM trees in wasm to acquire generated DOM elements without need to do expensive element by id querying for each element manually
+Component binding also could make use of binding subpath expression to access nested components
