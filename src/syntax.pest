@@ -1,0 +1,57 @@
+    WHITESPACE = _{ " " | "\t" | "\r" | "\n" }
+    COMMENT = _{ "//" ~ (!"\n" ~ ANY)* }
+
+    ident = @{ (ASCII_ALPHA | "_") ~ (ASCII_ALPHANUMERIC | "_" | "-")* }
+    number = @{ ASCII_DIGIT+ }
+
+    binding_part = @{ ident }
+
+    binding = ${ "@" ~ binding_part ~ ("%" ~ binding_part)* }
+    node_binding = ${ "$" ~ binding_part ~ ("%" ~ binding_part)* }
+
+    content = _{ ident | number | string | binding }
+    multiplier = { number | binding }
+
+    attr_name = @{ ident }
+    attr_value = ${ content }
+    attr = { attr_name ~ "=" ~ attr_value }
+
+    id_prop = @{ ident }
+    class_prop = @{ ident }
+
+    id_prop_prefixed = _{ "#" ~ id_prop }
+    class_prop_prefixed = _{ "." ~ class_prop }
+
+    attrs_prop = { "[" ~ attr* ~ "]" }
+
+    string = ${ ("\"" | "'") ~ string_inner ~ ("\"" | "'") }
+    string_inner = @{ string_char* }
+    string_char = {
+        !("\"" | "'" | "\\") ~ ANY
+        | "\\" ~ ("\"" | "'" | "\\" | "n" | "r" | "t")
+    }
+
+    prop = _{ id_prop_prefixed | class_prop_prefixed | attrs_prop }
+
+    node_name = @{ ident }
+    node = { node_name ~ prop* }
+    text_node = { "{" ~ content+ ~ "}" }
+
+    group = _{ "(" ~ expr ~ ")" }
+    term_target = _{ node | text_node | node_binding | group }
+    mul_suffix = _{ "*" ~ multiplier }
+
+    term = { term_target ~ !mul_suffix }
+    term_list = { term_target ~ mul_suffix? }
+
+    any_term = _{ term | term_list }
+
+    expr = _{ any_term ~ (binary_op ~ any_term)* }
+
+
+    sibling_op = @{ "+" }
+    child_op = @{ ">" }
+
+    binary_op = _{ sibling_op | child_op }
+
+    tree = _{ SOI ~ expr ~ EOI }

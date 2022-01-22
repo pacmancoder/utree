@@ -2,7 +2,14 @@
 name = "utree"
 version = "0.1.0"
 edition = "2021"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["Vladyslav Nikonov <mail@pacmancoder.xyz>"]
+description = "μTree - produce your tree-like structures (HTML, XML, etc.) with ease. Inspired by Emmet"
 
 [dependencies]
+strum = { version = "0.23", features = ["derive"] }
+thiserror = "1.0"
+pest = "2.1"
+pest_derive = "2.1"
+
+[dev-dependencies]
+expect-test = "1.1"
