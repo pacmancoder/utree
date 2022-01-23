@@ -113,20 +113,21 @@ mod tests
             Rule::tree,
             "(hello[attr1=value]>{hello}) + {@test wow 123 'hi'}",
             expect![[r#"
-                - term
-                  - term > node
-                    - node_name: "hello"
-                    - attrs_prop > attr
-                      - attr_name: "attr1"
-                      - attr_value > ident: "value"
-                  - child_op: ">"
-                  - term > text_node > ident: "hello"
-                - sibling_op: "+"
-                - term > text_node
-                  - binding > binding_part: "test"
-                  - ident: "wow"
-                  - number: "123"
-                  - string > string_inner: "hi"
+                - expr
+                  - term > expr
+                    - term > node
+                      - node_name: "hello"
+                      - attrs_prop > attr
+                        - attr_name: "attr1"
+                        - attr_value > ident: "value"
+                    - child_op: ">"
+                    - term > text_node > ident: "hello"
+                  - sibling_op: "+"
+                  - term > text_node
+                    - binding > binding_part: "test"
+                    - ident: "wow"
+                    - number: "123"
+                    - string > string_inner: "hi"
                 - EOI: """#]]
         );
     }
@@ -137,25 +138,26 @@ mod tests
             Rule::tree,
             "html>(body+head>div+(a>b)+p>a)\n+footer",
             expect![[r#"
-                - term > node > node_name: "html"
-                - child_op: ">"
-                - term
-                  - term > node > node_name: "body"
-                  - sibling_op: "+"
-                  - term > node > node_name: "head"
+                - expr
+                  - term > node > node_name: "html"
                   - child_op: ">"
-                  - term > node > node_name: "div"
-                  - sibling_op: "+"
-                  - term
-                    - term > node > node_name: "a"
+                  - term > expr
+                    - term > node > node_name: "body"
+                    - sibling_op: "+"
+                    - term > node > node_name: "head"
                     - child_op: ">"
-                    - term > node > node_name: "b"
+                    - term > node > node_name: "div"
+                    - sibling_op: "+"
+                    - term > expr
+                      - term > node > node_name: "a"
+                      - child_op: ">"
+                      - term > node > node_name: "b"
+                    - sibling_op: "+"
+                    - term > node > node_name: "p"
+                    - child_op: ">"
+                    - term > node > node_name: "a"
                   - sibling_op: "+"
-                  - term > node > node_name: "p"
-                  - child_op: ">"
-                  - term > node > node_name: "a"
-                - sibling_op: "+"
-                - term > node > node_name: "footer"
+                  - term > node > node_name: "footer"
                 - EOI: """#]]
         );
     }
@@ -166,15 +168,17 @@ mod tests
             Rule::tree,
             "html*3+(a>b)*@collection",
             expect![[r#"
-                - term_list
-                  - node > node_name: "html"
-                  - multiplier > number: "3"
-                - sibling_op: "+"
-                - term_list
-                  - term > node > node_name: "a"
-                  - child_op: ">"
-                  - term > node > node_name: "b"
-                  - multiplier > binding > binding_part: "collection"
+                - expr
+                  - term_list
+                    - node > node_name: "html"
+                    - multiplier > number: "3"
+                  - sibling_op: "+"
+                  - term_list
+                    - expr
+                      - term > node > node_name: "a"
+                      - child_op: ">"
+                      - term > node > node_name: "b"
+                    - multiplier > binding > binding_part: "collection"
                 - EOI: """#]]
         );
     }
@@ -185,7 +189,7 @@ mod tests
             Rule::tree,
             "html[ id=@collection%id ] * @collection",
             expect![[r#"
-                - term_list
+                - expr > term_list
                   - node
                     - node_name: "html"
                     - attrs_prop > attr
@@ -204,23 +208,25 @@ mod tests
             Rule::tree,
             "$html + div",
             expect![[r#"
-                - term > node_binding > binding_part: "html"
-                - sibling_op: "+"
-                - term > node > node_name: "div"
+                - expr
+                  - term > node_binding > binding_part: "html"
+                  - sibling_op: "+"
+                  - term > node > node_name: "div"
                 - EOI: """#]]
         );
         assert_parsed(
             Rule::tree,
             "($data%view + p>{test})*@data",
             expect![[r#"
-                - term_list
-                  - term > node_binding
-                    - binding_part: "data"
-                    - binding_part: "view"
-                  - sibling_op: "+"
-                  - term > node > node_name: "p"
-                  - child_op: ">"
-                  - term > text_node > ident: "test"
+                - expr > term_list
+                  - expr
+                    - term > node_binding
+                      - binding_part: "data"
+                      - binding_part: "view"
+                    - sibling_op: "+"
+                    - term > node > node_name: "p"
+                    - child_op: ">"
+                    - term > text_node > ident: "test"
                   - multiplier > binding > binding_part: "data"
                 - EOI: """#]]
         );
@@ -242,47 +248,48 @@ mod tests
                     >$items%view * @items
         "#;
         assert_parsed(Rule::tree, input, expect![[r#"
-            - term > node > node_name: "html"
-            - child_op: ">"
-            - term
-              - term > node > node_name: "head"
+            - expr
+              - term > node > node_name: "html"
+              - child_op: ">"
+              - term > expr
+                - term > node > node_name: "head"
+                - child_op: ">"
+                - term > node
+                  - node_name: "meta"
+                  - attrs_prop > attr
+                    - attr_name: "charset"
+                    - attr_value > string > string_inner: "utf-8"
+                - sibling_op: "+"
+                - term > expr
+                  - term > node > node_name: "title"
+                  - child_op: ">"
+                  - term > text_node > string > string_inner: "My page!"
+                - sibling_op: "+"
+                - term > node
+                  - node_name: "link"
+                  - attrs_prop
+                    - attr
+                      - attr_name: "rel"
+                      - attr_value > ident: "stylesheet"
+                    - attr
+                      - attr_name: "href"
+                      - attr_value > binding > binding_part: "css_styles"
+              - sibling_op: "+"
+              - term > node > node_name: "body"
               - child_op: ">"
               - term > node
-                - node_name: "meta"
-                - attrs_prop > attr
-                  - attr_name: "charset"
-                  - attr_value > string > string_inner: "utf-8"
-              - sibling_op: "+"
-              - term
-                - term > node > node_name: "title"
-                - child_op: ">"
-                - term > text_node > string > string_inner: "My page!"
-              - sibling_op: "+"
+                - node_name: "div"
+                - id_prop: "page-body"
+              - child_op: ">"
               - term > node
-                - node_name: "link"
-                - attrs_prop
-                  - attr
-                    - attr_name: "rel"
-                    - attr_value > ident: "stylesheet"
-                  - attr
-                    - attr_name: "href"
-                    - attr_value > binding > binding_part: "css_styles"
-            - sibling_op: "+"
-            - term > node > node_name: "body"
-            - child_op: ">"
-            - term > node
-              - node_name: "div"
-              - id_prop: "page-body"
-            - child_op: ">"
-            - term > node
-              - node_name: "div"
-              - id_prop: "list"
-            - child_op: ">"
-            - term_list
-              - node_binding
-                - binding_part: "items"
-                - binding_part: "view"
-              - multiplier > binding > binding_part: "items"
+                - node_name: "div"
+                - id_prop: "list"
+              - child_op: ">"
+              - term_list
+                - node_binding
+                  - binding_part: "items"
+                  - binding_part: "view"
+                - multiplier > binding > binding_part: "items"
             - EOI: """#]]);
     }
 }

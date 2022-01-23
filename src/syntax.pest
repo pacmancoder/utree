@@ -46,7 +46,7 @@
 
     any_term = _{ term | term_list }
 
-    expr = _{ any_term ~ (binary_op ~ any_term)* }
+    expr = { any_term ~ (binary_op ~ any_term)* }
 
 
     sibling_op = @{ "+" }
